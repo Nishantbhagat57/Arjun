@@ -3429,7 +3429,6 @@ drilldown
 driver
 drop
 dropped
-droptables
 dry
 dryrun
 ds
@@ -6917,7 +6916,6 @@ p2index
 p2p
 p3
 p4
-p4ssw0rD
 p5
 pDesc
 pGanjioption
@@ -8473,7 +8471,6 @@ ruletype
 run
 runQuery
 runState
-runcmd
 runer
 runid
 runnername
