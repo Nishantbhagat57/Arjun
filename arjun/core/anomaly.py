@@ -20,7 +20,7 @@ def define(response_1, response_2, param, value, wordlist):
         'lines_diff': None, # if http-body or plaintext aren't and there are more than two lines, contain which lines are same
         'same_headers': None, # if the headers are same, contains those headers
         'same_redirect': None, # if both requests redirect in similar manner, contains that redirection
-        'param_missing': None, # if param name is missing from the body, contains words that are already there
+        'param_missing': [], # if param name is missing from the body, contains words that are already there
         'value_missing': None # contains whether param value is missing from the body
     }
     if type(response_1) == type(response_2) == requests.models.Response:
