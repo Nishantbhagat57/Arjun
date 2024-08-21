@@ -6,16 +6,19 @@ import warnings
 
 import arjun.core.config as mem
 
+from ratelimit import limits, sleep_and_retry
 from arjun.core.utils import dict_to_xml
 
 warnings.filterwarnings('ignore') # Disable SSL related warnings
 
+@sleep_and_retry
+@limits(calls=mem.var['rate_limit'], period=1)
 def requester(request, payload={}):
     """
     central function for making http requests
     returns str on error otherwise response object of requests library
     """
-    if len(request.get('include', '')) != 0:
+    if request.get('include') and len(request.get('include', '')) != 0:
         payload.update(request['include'])
     if mem.var['stable']:
         mem.var['delay'] = random.choice(range(3, 10))

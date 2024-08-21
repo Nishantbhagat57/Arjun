@@ -8,9 +8,7 @@ import json
 
 from urllib.parse import urlparse
 import arjun.core.config as mem
-from arjun.core.bruter import bruter
 from arjun.core.exporter import exporter
-from arjun.core.requester import requester
 from arjun.core.anomaly import define, compare
 from arjun.core.utils import fetch_params, stable_request, random_str, slicer, confirm, populate, reader, nullify, prepare_requests, compatible_path
 
@@ -23,7 +21,7 @@ parser = argparse.ArgumentParser() # defines the parser
 parser.add_argument('-u', help='Target URL', dest='url')
 parser.add_argument('-o', '-oJ', help='Path for json output file.', dest='json_file')
 parser.add_argument('-oT', help='Path for text output file.', dest='text_file')
-parser.add_argument('-oB', help='Port for output to Burp Suite Proxy. Default port is 8080.', dest='burp_port', nargs='?', const=8080)
+parser.add_argument('-oB', help='Output to Burp Suite Proxy. Default is 127.0.0.1:8080.', dest='burp_proxy', nargs='?', const='127.0.0.1:8080')
 parser.add_argument('-d', help='Delay between requests in seconds. (default: 0)', dest='delay', type=float, default=0)
 parser.add_argument('-t', help='Number of concurrent threads. (default: 5)', dest='threads', type=int, default=5)
 parser.add_argument('-w', help='Wordlist file path. (default: {arjundir}/db/large.txt)', dest='wordlist', default=arjun_dir+'/db/large.txt')
@@ -32,6 +30,7 @@ parser.add_argument('-i', help='Import target URLs from file.', dest='import_fil
 parser.add_argument('-T', help='HTTP request timeout in seconds. (default: 15)', dest='timeout', type=float, default=15)
 parser.add_argument('-c', help='Chunk size. The number of parameters to be sent at once', type=int, dest='chunks', default=250)
 parser.add_argument('-q', help='Quiet mode. No output.', dest='quiet', action='store_true')
+parser.add_argument('--rate-limit', help='Max number of requests to be sent out per second (default: 9999)', dest='rate_limit', type=int, default=9999)
 parser.add_argument('--headers', help='Add headers. Separate multiple headers with a new line.', dest='headers', nargs='?', const=True)
 parser.add_argument('--passive', help='Collect parameter names from passive sources like wayback, commoncrawl and otx.', dest='passive', nargs='?', const='-')
 parser.add_argument('--stable', help='Prefer stability over speed.', dest='stable', action='store_true')
@@ -88,6 +87,8 @@ if len(wordlist) < mem.var['chunks']:
 if not args.url and not args.import_file:
     exit('%s No target(s) specified' % bad)
 
+from arjun.core.requester import requester
+from arjun.core.bruter import bruter
 
 def narrower(request, factors, param_groups):
     """
@@ -134,11 +135,11 @@ def initialize(request, wordlist, single_url=False):
         factors = define(response_1, response_2, fuzz, fuzz[::-1], wordlist)
         zzuf = "z" + random_str(6)
         response_3 = requester(request, {zzuf[:-1]: zzuf[::-1][:-1]})
-        while factors:
+        while True:
             reason = compare(response_3, factors, {zzuf[:-1]: zzuf[::-1][:-1]})[2]
             if not reason:
                 break
-            factors[reason] = []
+            factors[reason] = False
         if single_url:
             print('%s Analysing HTTP response for potential parameter names' % run)
         if found:
@@ -161,7 +162,7 @@ def initialize(request, wordlist, single_url=False):
             if len(param_groups) > prev_chunk_count:
                 response_3 = requester(request, {zzuf[:-1]: zzuf[::-1][:-1]})
                 if compare(response_3, factors, {zzuf[:-1]: zzuf[::-1][:-1]})[0] != '':
-                    print('%s Target is misbehaving. Try the --stable switch.' % bad)
+                    print('%s Webpage is returning different content on each request. Skipping.' % bad)
                     return []
             if mem.var['kill']:
                 return 'skipped'
@@ -192,7 +193,7 @@ def main():
             url = request['url']
             these_params = initialize(request, wordlist, single_url=True)
             if these_params == 'skipped':
-                print('%s Skipped %s due to errors' % (bad, request['url']))
+                print('%s Skipped %s due to errors' % (bad, url))
             elif these_params:
                 final_result[url] = {}
                 final_result[url]['params'] = these_params
@@ -209,6 +210,7 @@ def main():
                 count += 1
                 url = each['url']
                 mem.var['kill'] = False
+                mem.var['bad_req_count'] = 0
                 print('%s Scanning %d/%d: %s' % (run, count, len(request), url))
                 these_params = initialize(each, list(wordlist))
                 if these_params == 'skipped':

@@ -24,7 +24,8 @@ setup(
     package_data={'arjun': ['db/*']},
     install_requires=[
         'requests',
-        'dicttoxml'
+        'dicttoxml',
+        'ratelimit'
     ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -32,7 +33,7 @@ setup(
         'Intended Audience :: Information Technology',
         'Operating System :: OS Independent',
         'Topic :: Security',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'License :: OSI Approved :: GNU Affero General Public License v3',
         'Programming Language :: Python :: 3.4',
     ],
     entry_points={
