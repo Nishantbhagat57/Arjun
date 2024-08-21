@@ -46,7 +46,7 @@ def define(response_1, response_2, param, value, wordlist):
         elif body_1 and body_2 and body_1.count('\\n') == body_2.count('\\n'):
                 factors['lines_diff'] = diff_map(body_1, body_2)
         if param not in response_2.text:
-            factors['param_missing'] = [word for word in wordlist if word in response_2.text]
+            factors['param_missing'].extend([word for word in wordlist if word in response_2.text])
         if value not in response_2.text:
             factors['value_missing'] = True
     return factors
